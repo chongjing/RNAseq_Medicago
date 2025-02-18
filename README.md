@@ -185,7 +185,7 @@ for sample_dir in "$input_dir"/*/; do
     echo "${sample_name} completed"
     cd "${working_dir}"
 done
-
+```
 Concatenate all samples and only keep genes that are expressed in at least two samples.
 ```python
 import pandas as pd
