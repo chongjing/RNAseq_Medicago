@@ -736,7 +736,10 @@ EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = '
     FCcutoff=1.0, ylim = c(0, 7.5), xlim = c(-10, 15), pointSize = 1.0, labSize = 0,
     colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
 dev.off()
+```
+![Volcano plot](https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.6.QLF.DiffGene.volcano.png)
 
+```R
 # gene ranking dotplot, function from TOmicsVis
 # data should be (1st-col: Genes, 2nd-col: log2FoldChange, 3rd-col: Pvalue, 4th-col: FDR)
 pdf("1.7.GeneRanking.pdf",9,7)
