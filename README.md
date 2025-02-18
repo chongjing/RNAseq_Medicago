@@ -1,6 +1,6 @@
 # RNAseq_Medicago
 
- Differential Expression analysis of Medicago mutants
+Differential Expression analysis of Medicago mutants
 Project iD: X204SC24110826-Z01-F001. We have 36 samples, 10 conditions, some of them have only one or two replicates.
 
 ## 0. Data Preparation
