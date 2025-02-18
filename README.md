@@ -756,5 +756,6 @@ dev.off()
 
 q()
 ```
+![A gene rank plot](https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.7.GeneRanking.jpeg)
 
-## 5.Gene Expression Clustering
+##TO-DO 5.Gene Expression Clustering
