@@ -491,7 +491,7 @@ def combine_expression_data(base_directory, output_file):
                     df = pd.read_csv(file_path, sep='\t', header=None)
 
                     # Extract SampleID from filename (assuming it's in the format SampleID.sorted.bam.count.tsv)
-                    sample_id = file_path.split('/')[-1]  # Adjust this if your naming convention differs
+                    sample_id = sample_path.split('/')[-1]  # Adjust this if your naming convention differs
 
                     # Rename columns: first column as GeneID and second column as SampleID
                     df.columns = ['GeneID', sample_id]
@@ -594,7 +594,435 @@ for sample_dir in "$working_dir"/*/; do
 done
 ```
 
-### 3.2Clustering
+### 3.2TOmicsVis_Clustering
+Following is a way to visualize processed RNAseq results (mainly based on expression counts). Some of the featurs are helpful for quality control, e.g. correlation heatmap of replicates/treatments, and several clustering plots (PCA, tsne).
+
+```r
+library(TOmicsVis)
+library(readr)
+
+setwd("/data/pathology/cxia/projects/Giles/Jinpeng/X204SC24110826-Z01-F001/05.Clustering")
+
+counts <- read_tsv("../04.DE_analysis/raw.counts.order.tsv")
+#please note the replicates need to be listed together for clustering, as the plot only shows in the original order as in the input
+group <- read_tsv("../04.DE_analysis/groups.tsv")
+group <- as.data.frame(group)
+
+# Correlation Heatmap for samples/groups based on Pearson/Spearman algorithm
+pdf("061.corr_heatmap.pearson.pdf")
+corr_heatmap(
+  data = counts,
+  corr_method = "pearson",
+  cell_shape = "square",
+  fill_type = "full",
+#  multi_shape = FALSE,
+  lable_size = 2,
+  axis_angle = 45,
+  axis_size = 9,
+  lable_digits = 1,
+  color_low = "blue",
+  color_mid = "white",
+  color_high = "red",
+  outline_color = "white",
+  ggTheme = "theme_bw"
+)
+corr_heatmap(
+  data = counts,
+  corr_method = "spearman",
+  cell_shape = "square",
+  fill_type = "full",
+#  multi_shape = FALSE,
+  lable_size = 2,
+  axis_angle = 45,
+  axis_size = 9,
+  lable_digits = 1,
+  color_low = "blue",
+  color_mid = "white",
+  color_high = "red",
+  outline_color = "white",
+  ggTheme = "theme_bw"
+)
+corr_heatmap(
+  data = counts,
+  corr_method = "kendall",
+  cell_shape = "square",
+  fill_type = "full",
+#  multi_shape = FALSE,
+  lable_size = 2,
+  axis_angle = 45,
+  axis_size = 9,
+  lable_digits = 1,
+  color_low = "blue",
+  color_mid = "white",
+  color_high = "red",
+  outline_color = "white",
+  ggTheme = "theme_bw"
+)
+dev.off()
+
+# pca_analysis
+pdf("062.pca.pdf")
+pca_plot(
+  sample_gene = counts,
+  group_sample = group,
+  multi_shape = FALSE,
+  xPC = 1,
+  yPC = 2,
+  point_size = 4,
+  text_size = 2,
+  fill_alpha = 0.10,
+  border_alpha = 0.00,
+  legend_pos = "right",
+  legend_dir = "vertical",
+  ggTheme = "theme_bw"
+)
+dev.off()
+
+# tsne plot
+pdf("063.tsne.pdf")
+tsne_plot(
+  sample_gene = counts,
+  group_sample = group,
+  seed = 1,
+  multi_shape = FALSE,
+  point_size = 3,
+  point_alpha = 0.8,
+  text_size = 5,
+  text_alpha = 0.60,
+  fill_alpha = 0.20,
+  border_alpha = 0.00,
+  sci_fill_color = "Sci_AAAS",
+  legend_pos = "right",
+  legend_dir = "vertical",
+  ggTheme = "theme_bw"
+)
+dev.off()
+
+# UMAP
+pdf("064.umap.pdf")
+umap_plot(
+  sample_gene = counts,
+  group_sample = group,
+  seed = 1,
+  multi_shape = FALSE,
+  point_size = 3,
+  point_alpha = 1,
+  text_size = 5,
+  text_alpha = 0.60,
+  fill_alpha = 0.20,
+  border_alpha = 0.00,
+  sci_fill_color = "Sci_AAAS",
+  legend_pos = "right",
+  legend_dir = "vertical",
+  ggTheme = "theme_bw"
+)
+dev.off()
+
+# dendro_plot
+pdf("065.samples_dendrop.pdf")
+dendro_plot(
+  data = counts,
+  dist_method = "euclidean",
+  hc_method = "ward.D2",
+  tree_type = "rectangle",
+  k_num = 5,
+  palette = "npg",
+  color_labels_by_k = TRUE,
+  horiz = FALSE,
+  label_size = 1,
+  line_width = 1,
+  rect = TRUE,
+  rect_fill = TRUE,
+  xlab = "Samples",
+  ylab = "Height",
+  ggTheme = "theme_light"
+)
+dev.off
+
+# Heatmap group for visualizing grouped gene expression data, too busy for whole-gene sets, better for DE genes only!
+pdf("065.heatmap_group.pdf")
+heatmap_group(
+  sample_gene = counts,
+  group_sample = group,
+  scale_data = "row",
+  clust_method = "complete",
+  border_show = TRUE,
+  border_color = "#ffffff",
+  value_show = TRUE,
+  value_decimal = 2,
+  value_size = 5,
+  axis_size = 8,
+  cell_height = 10,
+  low_color = "#00880055",
+  mid_color = "#ffffff",
+  high_color = "#ff000055",
+  na_color = "#ff8800",
+  x_angle = 45
+)
+heatmap_cluster(
+  data = counts,
+  dist_method = "euclidean",
+  hc_method = "average",
+  k_num = 6,
+  show_rownames = FALSE,
+  palette = "RdBu",
+  cluster_pal = "Set1",
+  border_color = "#ffffff",
+  angle_col = 45,
+  label_size = 10,
+  base_size = 12,
+  line_color = "#0000cd",
+  line_alpha = 0.2,
+  summary_color = "#0000cd",
+  summary_alpha = 0.8
+)
+dev.off()
+
+```
 
 ## 4.Differential Expression analysis
-### 4.1 
+For DE analysis, my code is mainly from `edgeR` user's guide (https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf). This user's guide is a must-read in order to know the rationale behind the code.
+Differential Expression analysis using `edgeR` under `mamba activate R4.3.2`.
+
+### 4.1 WTEV_vs_WTCC
+```R
+library(EnhancedVolcano)
+library(gplots)
+library(RColorBrewer)
+library("ggplot2")
+library(edgeR)
+library(stringr)
+library(statmod)
+library(readr)
+library(ClusterGVis) #clutering
+library(TOmicsVis)
+
+my_count_matrix <- read_tsv("../raw.counts.tsv")
+my_count_matrix1 <- my_count_matrix[,c(1,17,33,7,34,35)]
+group <- c(1,1,2,2,2)
+sample <- factor(c("1","2","1","2","3"))
+y <- DGEList(counts=my_count_matrix1[,c(2:6)], group=group,genes=my_count_matrix[,1])
+#no filtering to keep all genes for all conditions
+#keep <- filterByExpr(y, min.count = 0.01, min.total.count = 0.01, large.n = 2, min.prop = 0.01)
+keep <- filterByExpr(y, group=group)
+table(keep)
+y <- y[keep, , keep.lib.sizes=FALSE]
+dim(y)
+# [1] 25120     5
+y <- normLibSizes(y)
+y$samples
+
+pdf("1.1.LRT.MDS.pdf")
+plotMDS(y, col=c("1","1","2","2","2"))
+dev.off()
+
+design <- model.matrix(~sample+group)
+rownames(design) <- colnames(y)
+design
+y <- estimateDisp(y, design, robust=TRUE)
+y$common.dispersion
+# [1] 0.322674
+pdf("1.2.LRT.dispersion.BCV.pdf")
+plotBCV(y)
+dev.off()
+fit <- glmQLFit(y, design, robust=TRUE)
+pdf("1.3.LRT.QLdispersion.pdf")
+plotQLDisp(fit)
+dev.off()
+qlf <- glmQLFTest(fit)
+topTags(qlf)
+cpm(y)[rownames(topTags(qlf)),]
+summary(decideTests(qlf,lfc=0.5))
+allTags2 <- topTags(qlf, n = nrow(qlf$genes), adjust.method = "BH", sort.by = "none", p.value = 1)
+DEG_glmQLF <- as.data.frame(allTags2)
+log2FC <- 0.5
+k1 <- (DEG_glmQLF$FDR < 0.05) & (DEG_glmQLF$logFC < -0.5)
+k2 <- (DEG_glmQLF$FDR < 0.05) & (DEG_glmQLF$logFC > 0.5)
+DEG_glmQLF$change <- ifelse(k1, "DOWN", ifelse(k2, "UP", "Not_significant"))
+table(DEG_glmQLF$change)
+
+DEG_glmQLF$CPM <- cpm(y)[rownames(qlf),]
+write.csv(DEG_glmQLF, "1.4.QLF.DE.results.csv", quote = F)
+
+## Visualization
+deseq_results <- read.csv("1.4.QLF.DE.results.csv",sep=",", header = T)
+diffGenes <- deseq_results[deseq_results$FDR < 0.05,][,c(2,9,10,11,12,13)]
+clustRows <- hclust(as.dist(1-cor(t(diffGenes[,c(2,3,4,5,6)]),method="pearson")), method="complete")
+clustColumns <- hclust(as.dist(1-cor(diffGenes[,c(2,3,4,5,6)],method="spearman")), method="complete")
+module.assign <- cutree(clustRows, k=2)
+module.color <- rainbow(length(unique(module.assign)), start=0.1, end=0.9)
+module.color <- module.color[as.vector(module.assign)]
+#myheatcolors1 <- blueorange(75)
+myheatcolors1 <- colorRampPalette(c("blue", "orange"))(25)
+pdf("1.5.QLF.DiffGene.heatmap.pdf")
+heatmap.2(data.matrix(diffGenes[,c(2,3,4,5,6)]),
+    Rowv=as.dendrogram(clustRows),
+    Colv=as.dendrogram(clustColumns),
+    RowSideColors=module.color,
+    col=myheatcolors1, scale='row', labRow=NA,
+    density.info="none", trace="none",
+    cexRow=1, cexCol=1, margins=c(8,20), keysize=1, srtCol=45)
+dev.off()
+png("1.5.QLF.DiffGene.heatmap.png",width = 636, height = 980)
+heatmap.2(data.matrix(diffGenes[,c(2,3,4,5,6)]),
+    Rowv=as.dendrogram(clustRows),
+    Colv=as.dendrogram(clustColumns),
+    RowSideColors=module.color,
+    col=myheatcolors1, scale='row', labRow=NA,
+    density.info="none", trace="none",
+    cexRow=1, cexCol=1, margins=c(8,20), keysize=0.5, srtCol=45)
+dev.off()
+
+pdf("1.6.QLF.DiffGene.volcano.pdf", 7, 7)
+EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = 'FDR', pCutoff = 5e-2,
+    FCcutoff=1.0, ylim = c(0, 7.5), xlim = c(-10, 15), pointSize = 1.0, labSize = 0,
+    colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+dev.off()
+png("1.6.QLF.DiffGene.volcano.png", 800, 800)
+EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = 'FDR', pCutoff = 5e-2,
+    FCcutoff=1.0, ylim = c(0, 7.5), xlim = c(-10, 15), pointSize = 1.0, labSize = 0,
+    colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+dev.off()
+
+# gene ranking dotplot, function from TOmicsVis
+# data should be (1st-col: Genes, 2nd-col: log2FoldChange, 3rd-col: Pvalue, 4th-col: FDR)
+pdf("1.7.GeneRanking.pdf")
+gene_rank_plot(
+  data = deseq_results[,c(2,3,6,7)],
+  log2fc = 1,
+  palette = "Spectral",
+  top_n = 10,
+  genes_to_label = NULL,
+  label_size = 5,
+  base_size = 12,
+  title = "Gene ranking dotplot",
+  xlab = "Ranking of differentially expressed genes",
+  ylab = "Log2FoldChange"
+)
+dev.off()
+
+q()
+```
+### 4.2 WTEV_vs_WTRE
+```R
+library(EnhancedVolcano)
+library(gplots)
+library(RColorBrewer)
+library("ggplot2")
+library(edgeR)
+library(stringr)
+library(statmod)
+library(readr)
+library(ClusterGVis) #clutering
+library(TOmicsVis)
+
+my_count_matrix <- read_tsv("../raw.counts.tsv")
+my_count_matrix1 <- my_count_matrix[,c(1,4,12,14,7,34,35)]
+group <- c(1,1,1,2,2,2)
+sample <- factor(c("1","2","3","1","2","3"))
+y <- DGEList(counts=my_count_matrix1[,c(2:7)], group=group,genes=my_count_matrix[,1])
+#no filtering to keep all genes for all conditions
+#keep <- filterByExpr(y, min.count = 0.01, min.total.count = 0.01, large.n = 2, min.prop = 0.01)
+keep <- filterByExpr(y, group=group)
+table(keep)
+y <- y[keep, , keep.lib.sizes=FALSE]
+dim(y)
+# [1] 23484     6
+y <- normLibSizes(y)
+y$samples
+
+pdf("1.1.LRT.MDS.pdf")
+plotMDS(y, col=c("1","1","1","2","2","2"))
+dev.off()
+
+design <- model.matrix(~sample+group)
+rownames(design) <- colnames(y)
+design
+y <- estimateDisp(y, design, robust=TRUE)
+y$common.dispersion
+# [1] 0.04480926
+pdf("1.2.LRT.dispersion.BCV.pdf")
+plotBCV(y)
+dev.off()
+fit <- glmQLFit(y, design, robust=TRUE)
+pdf("1.3.LRT.QLdispersion.pdf")
+plotQLDisp(fit)
+dev.off()
+qlf <- glmQLFTest(fit)
+topTags(qlf)
+cpm(y)[rownames(topTags(qlf)),]
+summary(decideTests(qlf,lfc=0.5))
+allTags2 <- topTags(qlf, n = nrow(qlf$genes), adjust.method = "BH", sort.by = "none", p.value = 1)
+DEG_glmQLF <- as.data.frame(allTags2)
+log2FC <- 0.5
+k1 <- (DEG_glmQLF$FDR < 0.05) & (DEG_glmQLF$logFC < -0.5)
+k2 <- (DEG_glmQLF$FDR < 0.05) & (DEG_glmQLF$logFC > 0.5)
+DEG_glmQLF$change <- ifelse(k1, "DOWN", ifelse(k2, "UP", "Not_significant"))
+table(DEG_glmQLF$change)
+#           DOWN Not_significant              UP
+#           2532           18898            2054
+
+DEG_glmQLF$CPM <- cpm(y)[rownames(qlf),]
+write.csv(DEG_glmQLF, "1.4.QLF.DE.results.csv", quote = F)
+
+## Visualization
+deseq_results <- read.csv("1.4.QLF.DE.results.csv",sep=",", header = T)
+diffGenes <- deseq_results[deseq_results$FDR < 0.05,][,c(2,9,10,11,12,13,14)]
+clustRows <- hclust(as.dist(1-cor(t(diffGenes[,c(2,3,4,5,6,7)]),method="pearson")), method="complete")
+clustColumns <- hclust(as.dist(1-cor(diffGenes[,c(2,3,4,5,6,7)],method="spearman")), method="complete")
+module.assign <- cutree(clustRows, k=2)
+module.color <- rainbow(length(unique(module.assign)), start=0.1, end=0.9)
+module.color <- module.color[as.vector(module.assign)]
+#myheatcolors1 <- blueorange(75)
+myheatcolors1 <- colorRampPalette(c("blue", "orange"))(25)
+pdf("1.5.QLF.DiffGene.heatmap.pdf")
+heatmap.2(data.matrix(diffGenes[,c(2,3,4,5,6,7)]),
+    Rowv=as.dendrogram(clustRows),
+    Colv=as.dendrogram(clustColumns),
+    RowSideColors=module.color,
+    col=myheatcolors1, scale='row', labRow=NA,
+    density.info="none", trace="none",
+    cexRow=1, cexCol=1, margins=c(8,20), keysize=1, srtCol=45)
+dev.off()
+png("1.5.QLF.DiffGene.heatmap.png",width = 636, height = 980)
+heatmap.2(data.matrix(diffGenes[,c(2,3,4,5,6,7)]),
+    Rowv=as.dendrogram(clustRows),
+    Colv=as.dendrogram(clustColumns),
+    RowSideColors=module.color,
+    col=myheatcolors1, scale='row', labRow=NA,
+    density.info="none", trace="none",
+    cexRow=1, cexCol=1, margins=c(8,20), keysize=0.5, srtCol=45)
+dev.off()
+
+pdf("1.6.QLF.DiffGene.volcano.pdf", 7, 7)
+EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = 'FDR', pCutoff = 5e-2,
+    FCcutoff=1.0, ylim = c(0, 7.5), xlim = c(-10, 15), pointSize = 1.0, labSize = 0,
+    colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+dev.off()
+png("1.6.QLF.DiffGene.volcano.png", 800, 800)
+EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = 'FDR', pCutoff = 5e-2,
+    FCcutoff=1.0, ylim = c(0, 7.5), xlim = c(-10, 15), pointSize = 1.0, labSize = 0,
+    colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+dev.off()
+
+# gene ranking dotplot, function from TOmicsVis
+# data should be (1st-col: Genes, 2nd-col: log2FoldChange, 3rd-col: Pvalue, 4th-col: FDR)
+pdf("1.7.GeneRanking.pdf",9,7)
+gene_rank_plot(
+  data = deseq_results[,c(2,3,6,7)],
+  log2fc = 1,
+  palette = "Spectral",
+  top_n = 10,
+  genes_to_label = NULL,
+  label_size = 5,
+  base_size = 12,
+  title = "Gene ranking dotplot",
+  xlab = "Ranking of differentially expressed genes",
+  ylab = "Log2FoldChange"
+)
+dev.off()
+
+q()
+```
+
+## 5.Gene Expression Clustering
