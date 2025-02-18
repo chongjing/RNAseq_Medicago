@@ -665,6 +665,7 @@ plotMDS(y, col=c("1","1","1","2","2","2"))
 dev.off()
 ```
 Following is an MDS plot shows the relative similarities of the six samples. This gives you another way to evaluate your experiment quality.
+![MDS plot](https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.1.LRT.MDS.jpeg)
 
 ```R
 design <- model.matrix(~sample+group)
