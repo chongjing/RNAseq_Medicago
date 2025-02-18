@@ -1,323 +1,42 @@
 # RNAseq_Medicago
 
- Differential Expression analysis of two Medicago mutants
+ Differential Expression analysis of Medicago mutants
+Project iD: X204SC24110826-Z01-F001. We have 36 samples, 10 conditions, some of them have only one or two replicates.
 
 ## 0. Data Preparation
 
 ### 0.1 Reference
 
-Medicago truncatula v4.0 genome and associated annotation (from https://phytozome-next.jgi.doe.gov/info/Mtruncatula_Mt4_0v1) were used as reference. The reference genome was indexed using `novoindex`.
+Medicago truncatula v4.0 genome and associated annotation (from https://phytozome-next.jgi.doe.gov/info/Mtruncatula_Mt4_0v1) were used as reference. The reference genome was indexed using `bwa-mem2, samtools, novoindex` for subsequent analyses.
 
 ```bash
 cd /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/
 curl --cookie jgi_session=/api/sessions/ad1b3f6d89afedaa910f96b575be09c5 --output download.20241120.095555.zip -d "{\"ids\":{\"Phytozome-285\":[\"53112a7f49607a1be0055936\",\"53112a7e49607a1be0055934\"]}}" -H "Content-Type: application/json" https://files-download.jgi.doe.gov/filedownload/
 /rds/user/cx264/hpc-work/program/novocraft/novoindex Mtruncatula_285_Mt4.0.index Mtruncatula_285_Mt4.0.fa
+bwa-mem2 index Mtruncatula_285_Mt4.0.fa
+samtools faidx Mtruncatula_285_Mt4.0.fa
+
 # get gtf file from gff3
 /rds/user/cx264/rds-csc_programmes-FTKWLWDeHys/programs/gffread/gffread-0.12.7.Linux_x86_64/gffread Mtruncatula_285_Mt4.0v1.gene.gff3 -T -o Mtruncatula_285_Mt4.0v1.gene.gtf
+# reference genome annotation gtf to bed12 for ReQC analyses
+/rds-d7/user/cx264/rds-csc_programmes-FTKWLWDeHys/programs/gffread/gffread-0.12.7.Linux_x86_64/gffread --bed -o /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.bed12 /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.gff3
 ```
 
-### 0.2 Directories
-
-```bash
-for i in {1..3}; do mkdir Jester_mock_12hrs_rep${i} Jester_spotinoc_12hrs_rep${i} nin-1_mock_12hrs_rep${i} nin-1_spotinoc_12hrs_rep${i} nin-1_mock_24hrs_rep${i} nin-1_spotinoc_24hrs_rep${i} nsp1-1_mock_12hrs_rep${i} nsp1-1_spotinoc_12hrs_rep${i} nsp1-1_mock_24hrs_rep${i} nsp1-1_spotinoc_24hrs_rep${i} nsp2-2_mock_12hrs_rep${i} nsp2-2_spotinoc_12hrs_rep${i} nsp2-2_mock_24hrs_rep${i} nsp2-2_spotinoc_24hrs_rep${i}; done
-```
-
-## 1. Reads Quality Control and Trimming
-
-Raw RNA-seq reads were subjected to `Trimmomatic` (v0.39) to filter out reads of low quality. Specifically, bases from the start and end of a read with quality bellow 20 were trimmed, and reads with length shorter than 40 bp were discarded, by setting `LEADING:20 TRAILING:20 SLIDINGWINDOW:4:20 MINLEN:40`.
-
-```bash
-for file in /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/0.data/*; do
-  if [ -d "$file" ]; then
-    sample_name=$(basename "$file")
-    fq="/rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/rawdata/${sample_name}.fastq.gz"
-    cd ${sample_name}
-
-      # Run Trimmomatic
-    echo "Processing ${sample_name}"
-    java -jar /usr/local/software/trimmomatic/0.39/trimmomatic-0.39.jar SE -threads 4 -summary "${sample_name}.summary" "$fq" ${sample_name}.fq.gz LEADING:20 TRAILING:20 SLIDINGWINDOW:4:20 MINLEN:40
-    echo "${sample_name} finished"
-    cd /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/0.data/
-  fi
-done
-
-echo "Trimmomatic process completed."
-```
-
-## 2.Reads Mapping
-
-`Novoalign` V4.03.08 with default parameters was used to align filtered reads to reference genome. The alignment in bam format was sorted using `novosort`. `qualimap rnaseq` function in `qualimap` (v2.3) was used to check quality of the alignment. `htseq-count` (2.0.5) was used to calculate expression counts.
-
-```bash
-cd /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/1.mapping/
-
-export PATH=/rds/user/cx264/rds-csc_programmes-FTKWLWDeHys/programs/java/jdk-17.0.10/bin:/rds/project/rds-FTKWLWDeHys/programs/mambaforge/bin:$PATH
-
-# Run novoalign iterate through each sample
-for file in /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/0.data/*; do
-  if [ -d "$file" ]; then
-    sample_name=$(basename "$file")
-    fq="/rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/0.data/${sample_name}/${sample_name}.fq.gz"
-    cd ${sample_name}
-
-    # Run novoalign
-    echo "Processing ${sample_name}"
-
-
-    # Change to the working directory
-    cd /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/1.mapping/"${sample_name}"
-    echo "Processing ${sample_name}"
-    echo "${fq}"
-
-    # Map with novoalign
-    /rds/user/cx264/hpc-work/program/novocraft/novoalign -d /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0.index -f "${fq}" -o BAM "@RG\tID:${sample_name}\tSM:${sample_name}\tPL:illumina" -k > 1.raw.bam
-
-    # Create a tmp directory for novosort
-    mkdir -p tmp
-
-    # Sort and process with novosort
-    /rds/user/cx264/hpc-work/program/novocraft/novosort -m 32G --threads 16 --tmpdir ./tmp --output 2.sorted.bam --index --bai --markDuplicates --stats 2.duplicate.summary 1.raw.bam
-
-    # Run mapinsights bamqc
-    /rds/user/cx264/hpc-work/program/mapinsights/mapinsights bamqc -r /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0.fa -i 2.sorted.bam -o ./
-    # Run qualimap
-    /rds/user/cx264/rds-csc_programmes-FTKWLWDeHys/programs/qualimap_v2.3/qualimap rnaseq -bam 2.sorted.bam -gtf /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.gtf -outdir ./qualimap/ -outformat pdf
-
-
-    # Expression Counts
-    # HTseq-count
-    /rds/user/cx264/hpc-work/program/miniforge3/envs/python3.8/bin/htseq-count --type transcript --counts_output 3.sorted.bam.count.tsv --nprocesses 16 --max-reads-in-buffer 1000000 2.sorted.bam /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.gtf
-
-    echo "${sample_name} finished"
-    cd /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/1.mapping/
-
-  fi
-done
-
-echo "Alignment process completed."
-```
-
-## 3.Clustering
-
-```bash
-cd /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/2.clustering
-
-/rds/project/rds-FTKWLWDeHys/programs/mambaforge/bin/multiBamSummary BED-file --BED /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.bed --bamfiles ../1.mapping/Jester_mock_12hrs_rep1/2.sorted.bam ../1.mapping/nsp1-1_mock_24hrs_rep1/2.sorted.bam ../1.mapping/Jester_mock_12hrs_rep2/2.sorted.bam ../1.mapping/nsp1-1_mock_24hrs_rep2/2.sorted.bam ../1.mapping/Jester_mock_12hrs_rep3/2.sorted.bam ../1.mapping/nsp1-1_mock_24hrs_rep3/2.sorted.bam ../1.mapping/Jester_spotinoc_12hrs_rep1/2.sorted.bam ../1.mapping/nsp1-1_spotinoc_12hrs_rep1/2.sorted.bam ../1.mapping/Jester_spotinoc_12hrs_rep2/2.sorted.bam ../1.mapping/nsp1-1_spotinoc_12hrs_rep2/2.sorted.bam ../1.mapping/Jester_spotinoc_12hrs_rep3/2.sorted.bam ../1.mapping/nsp1-1_spotinoc_12hrs_rep3/2.sorted.bam ../1.mapping/nin-1_mock_12hrs_rep1/2.sorted.bam ../1.mapping/nsp1-1_spotinoc_24hrs_rep1/2.sorted.bam ../1.mapping/nin-1_mock_12hrs_rep2/2.sorted.bam ../1.mapping/nsp1-1_spotinoc_24hrs_rep2/2.sorted.bam ../1.mapping/nin-1_mock_12hrs_rep3/2.sorted.bam ../1.mapping/nsp1-1_spotinoc_24hrs_rep3/2.sorted.bam ../1.mapping/nin-1_mock_24hrs_rep1/2.sorted.bam ../1.mapping/nsp2-2_mock_12hrs_rep1/2.sorted.bam ../1.mapping/nin-1_mock_24hrs_rep2/2.sorted.bam ../1.mapping/nsp2-2_mock_12hrs_rep2/2.sorted.bam ../1.mapping/nin-1_mock_24hrs_rep3/2.sorted.bam ../1.mapping/nsp2-2_mock_12hrs_rep3/2.sorted.bam ../1.mapping/nin-1_spotinoc_12hrs_rep1/2.sorted.bam ../1.mapping/nsp2-2_mock_24hrs_rep1/2.sorted.bam ../1.mapping/nin-1_spotinoc_12hrs_rep2/2.sorted.bam ../1.mapping/nsp2-2_mock_24hrs_rep2/2.sorted.bam ../1.mapping/nin-1_spotinoc_12hrs_rep3/2.sorted.bam ../1.mapping/nsp2-2_mock_24hrs_rep3/2.sorted.bam ../1.mapping/nin-1_spotinoc_24hrs_rep1/2.sorted.bam ../1.mapping/nsp2-2_spotinoc_12hrs_rep1/2.sorted.bam ../1.mapping/nin-1_spotinoc_24hrs_rep2/2.sorted.bam ../1.mapping/nsp2-2_spotinoc_12hrs_rep2/2.sorted.bam ../1.mapping/nin-1_spotinoc_24hrs_rep3/2.sorted.bam ../1.mapping/nsp2-2_spotinoc_12hrs_rep3/2.sorted.bam ../1.mapping/nsp1-1_mock_12hrs_rep1/2.sorted.bam ../1.mapping/nsp2-2_spotinoc_24hrs_rep1/2.sorted.bam ../1.mapping/nsp1-1_mock_12hrs_rep2/2.sorted.bam ../1.mapping/nsp2-2_spotinoc_24hrs_rep2/2.sorted.bam ../1.mapping/nsp1-1_mock_12hrs_rep3/2.sorted.bam ../1.mapping/nsp2-2_spotinoc_24hrs_rep3/2.sorted.bam --outFileName 1.correlation.matrix --metagene -p max --outRawCounts 2.rawCounts.tab --verbose --labels Jester_mock_12hrs_rep1 nsp1-1_mock_24hrs_rep1 Jester_mock_12hrs_rep2 nsp1-1_mock_24hrs_rep2 Jester_mock_12hrs_rep3 nsp1-1_mock_24hrs_rep3 Jester_spotinoc_12hrs_rep1 nsp1-1_spotinoc_12hrs_rep1 Jester_spotinoc_12hrs_rep2 nsp1-1_spotinoc_12hrs_rep2 Jester_spotinoc_12hrs_rep3 nsp1-1_spotinoc_12hrs_rep3 nin-1_mock_12hrs_rep1 nsp1-1_spotinoc_24hrs_rep1 nin-1_mock_12hrs_rep2 nsp1-1_spotinoc_24hrs_rep2 nin-1_mock_12hrs_rep3 nsp1-1_spotinoc_24hrs_rep3 nin-1_mock_24hrs_rep1 nsp2-2_mock_12hrs_rep1 nin-1_mock_24hrs_rep2 nsp2-2_mock_12hrs_rep2 nin-1_mock_24hrs_rep3 nsp2-2_mock_12hrs_rep3 nin-1_spotinoc_12hrs_rep1 nsp2-2_mock_24hrs_rep1 nin-1_spotinoc_12hrs_rep2 nsp2-2_mock_24hrs_rep2 nin-1_spotinoc_12hrs_rep3 nsp2-2_mock_24hrs_rep3 nin-1_spotinoc_24hrs_rep1 nsp2-2_spotinoc_12hrs_rep1 nin-1_spotinoc_24hrs_rep2 nsp2-2_spotinoc_12hrs_rep2 nin-1_spotinoc_24hrs_rep3 nsp2-2_spotinoc_12hrs_rep3 nsp1-1_mock_12hrs_rep1 nsp2-2_spotinoc_24hrs_rep1 nsp1-1_mock_12hrs_rep2 nsp2-2_spotinoc_24hrs_rep2 nsp1-1_mock_12hrs_rep3 nsp2-2_spotinoc_24hrs_rep3 --numberOfProcessors 16
-
-/rds/project/rds-FTKWLWDeHys/programs/mambaforge/bin/plotCorrelation --corData 1.correlation.matrix --corMethod spearman --whatToPlot heatmap --plotFile 3.spearman.heatmap1.pdf --plotTitle spearman --labels Jester_mock_12hrs_rep1 nsp1-1_mock_24hrs_rep1 Jester_mock_12hrs_rep2 nsp1-1_mock_24hrs_rep2 Jester_mock_12hrs_rep3 nsp1-1_mock_24hrs_rep3 Jester_spotinoc_12hrs_rep1 nsp1-1_spotinoc_12hrs_rep1 Jester_spotinoc_12hrs_rep2 nsp1-1_spotinoc_12hrs_rep2 Jester_spotinoc_12hrs_rep3 nsp1-1_spotinoc_12hrs_rep3 nin-1_mock_12hrs_rep1 nsp1-1_spotinoc_24hrs_rep1 nin-1_mock_12hrs_rep2 nsp1-1_spotinoc_24hrs_rep2 nin-1_mock_12hrs_rep3 nsp1-1_spotinoc_24hrs_rep3 nin-1_mock_24hrs_rep1 nsp2-2_mock_12hrs_rep1 nin-1_mock_24hrs_rep2 nsp2-2_mock_12hrs_rep2 nin-1_mock_24hrs_rep3 nsp2-2_mock_12hrs_rep3 nin-1_spotinoc_12hrs_rep1 nsp2-2_mock_24hrs_rep1 nin-1_spotinoc_12hrs_rep2 nsp2-2_mock_24hrs_rep2 nin-1_spotinoc_12hrs_rep3 nsp2-2_mock_24hrs_rep3 nin-1_spotinoc_24hrs_rep1 nsp2-2_spotinoc_12hrs_rep1 nin-1_spotinoc_24hrs_rep2 nsp2-2_spotinoc_12hrs_rep2 nin-1_spotinoc_24hrs_rep3 nsp2-2_spotinoc_12hrs_rep3 nsp1-1_mock_12hrs_rep1 nsp2-2_spotinoc_24hrs_rep1 nsp1-1_mock_12hrs_rep2 nsp2-2_spotinoc_24hrs_rep2 nsp1-1_mock_12hrs_rep3 nsp2-2_spotinoc_24hrs_rep3 --colorMap hot_r --plotNumbers --skipZeros --removeOutliers --zMin 0.6
-```
-
-## 4.Differential Expression Analysis
-
-For DE analysis, my code is mainly from edgeR user's guide (https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf). This user's guide is a must-read in order to know the rationale behind the code.
-We start from concatenating all counts:
-
-```bash
-paste -d"\t" ../1.mapping/Jester_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/Jester_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/Jester_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/Jester_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/Jester_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/Jester_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_24hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_24hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_24hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_24hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_24hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_24hrs_rep3/3.sorted.bam.count.tsv | awk '{print $1"\t"$2"\t"$4"\t"$6"\t"$8"\t"$10"\t"$12"\t"$14"\t"$16"\t"$18"\t"$20"\t"$22"\t"$24"\t"$26"\t"$28"\t"$30"\t"$32"\t"$34"\t"$36"\t"$38"\t"$40"\t"$42"\t"$44"\t"$46"\t"$48"\t"$50"\t"$52"\t"$54"\t"$56"\t"$58"\t"$60"\t"$62"\t"$64"\t"$66"\t"$68"\t"$70"\t"$72"\t"$74"\t"$76"\t"$78"\t"$80"\t"$82"\t"$84}' > 01.raw.counts.tsv
-```
-
-### Jester_spotinoc_12hrs VS Jester_mock_12hrs
-
-```R
-cd /data/pathology/cxia/projects/Giles/Jinpeng/3.DEanalysis/01.Jester_spotinoc_12hrs_VS_Jester_mock_12hrs
-paste -d"\t" ../1.mapping/Jester_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/Jester_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/Jester_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/Jester_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/Jester_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/Jester_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv | awk '{print $1"\t"$2"\t"$4"\t"$6"\t"$8"\t"$10"\t"$12}' > 01.raw.counts.tsv
-
-mamba activate R4.2.3
-R
-library(EnhancedVolcano)
-library(gplots)
-library(RColorBrewer)
-library("ggplot2")
-library(edgeR)
-library(stringr)
-library(statmod)
-library(readr)
-
-my_count_matrix <- read_tsv("01.raw.counts.tsv")
-# we have two groups (Jester_mock_12hrs, Jester_spotinoc_12hrs), and each group has three samples
-# so we design experiment:
-group <- c(1,1,1,2,2,2)
-sample <- factor(c("1","2","3","1","2","3"))
-y <- DGEList(counts=my_count_matrix[,c(2:7)], group=group,genes=my_count_matrix[,1])
-
-# then we filter genes that are not expressed in either experimental condition
-# you may check and change the options for your purpose
-# since these data are sparse, we apply less strict criteria for filtering
-keep <- filterByExpr(y, min.count = 0.01, min.total.count = 0.01, large.n = 2, min.prop = 0.01)
-table(keep)
-#FALSE  TRUE
-#47486  3413
-y <- y[keep, , keep.lib.sizes=FALSE]
-dim(y)
-# TMM normalization is applied to account for the compositional biases
-y<-normLibSizes(y)
-y$samples
-#plot clustering of treatment and control
-pdf("1.1.LRT.MDS.pdf")
-plotMDS(y, col=rep(1:2, each=3))
-dev.off()
-```
-
-Following is an MDS plot shows the relative similarities of the six samples. This gives you another way to evaluate your experiment quality.
-
-((MDS plot))
-
-Next, we need to define our design matrix based on the experimental design.
-
-```R
-design <- model.matrix(~sample+group)
-rownames(design) <- colnames(y)
-design
-#                           (Intercept) sample2 sample3 group
-#Jester_mock_12hrs_rep1               1       0       0     1
-#Jester_mock_12hrs_rep2               1       1       0     1
-#Jester_mock_12hrs_rep3               1       0       1     1
-#Jester_spotinoc_12hrs_rep1           1       0       0     2
-#Jester_spotinoc_12hrs_rep2           1       1       0     2
-#Jester_spotinoc_12hrs_rep3           1       0       1     2
-#attr(,"assign")
-#[1] 0 1 1 2
-#attr(,"contrasts")
-#attr(,"contrasts")$sample
-#[1] "contr.treatment"
-```
-
-Then we do a `Dispersion estimation` step. Dispersion estimation is performed to account for variability in gene expression data that is not explained by the mean expression levels alone. This variability can be due to biological differences, technical noise, or other factors.
-
-```R
-y <- estimateDisp(y, design, robust=TRUE)
-y$common.dispersion
-#[1] 0.151497
-pdf("1.2.LRT.dispersion.BCV.pdf")
-plotBCV(y)
-dev.off()
-```
-
-![](C:\Users\cx264\AppData\Roaming\marktext\images\2025-01-21-16-18-30-image.png)
-
-```R
-fit <- glmQLFit(y, design, robust=TRUE)
-pdf("1.3.LRT.QLdispersion.pdf")
-plotQLDisp(fit)
-dev.off()
-```
-
-((QTLdispersion figure))
-
-Then we do test for significant differential expression in each gene using the QLF-test.
-
-```R
-qlf <- glmQLFTest(fit)
-topTags(qlf)
-cpm(y)[rownames(topTags(qlf)),]
-summary(decideTests(qlf,lfc=0.5))
-#       group
-#Down       4
-#NotSig  3408
-#Up         1
-
-# following is to save results with change information, FDR
-allTags2 <- topTags(qlf, n = nrow(qlf$genes), adjust.method = "BH", sort.by = "none", p.value = 1)
-DEG_glmQLF <- as.data.frame(allTags2)
-# differential expression was defined as FDR < 0.05 and log2FC>0.5 or
-log2FC<-0.5
-k1 <- (DEG_glmQLF$FDR < 0.05) & (DEG_glmQLF$logFC < -0.5)
-k2 <- (DEG_glmQLF$FDR < 0.05) & (DEG_glmQLF$logFC > 0.5)
-DEG_glmQLF$change <- ifelse(k1, "DOWN", ifelse(k2, "UP", "Not_significant"))
-table(DEG_glmQLF$change)
-DEG_glmQLF$CPM <- cpm(y)[rownames(qlf),]
-write.csv(DEG_glmQLF, "1.4.QLF.DE.results.Jester_12hrs_spotinoc_vs_mock.FINAL.csv", quote = F)
-
-
-## Visualization
-deseq_results <- read.csv("1.4.QLF.DE.results.Jester_12hrs_spotinoc_vs_mock.FINAL.csv",sep=",", header = T)
-diffGenes <- deseq_results[deseq_results$FDR < 0.05,][,c(2,9,10,11,12,13,14)]
-clustRows <- hclust(as.dist(1-cor(t(diffGenes[,c(2,3,4,5,6,7)]),method="pearson")), method="complete")
-clustColumns <- hclust(as.dist(1-cor(diffGenes[,c(2,3,4,5,6,7)],method="spearman")), method="complete")
-module.assign <- cutree(clustRows, k=2)
-module.color <- rainbow(length(unique(module.assign)), start=0.1, end=0.9)
-module.color <- module.color[as.vector(module.assign)]
-#myheatcolors1 <- blueorange(75)
-myheatcolors1 <- colorRampPalette(c("blue", "orange"))(25)
-pdf("1.5.QLF.DiffGene.heatmap.pdf")
-heatmap.2(data.matrix(diffGenes[,c(2,3,4,5,6,7)]),
-    Rowv=as.dendrogram(clustRows),
-    Colv=as.dendrogram(clustColumns),
-    RowSideColors=module.color,
-    col=myheatcolors1, scale='row', labRow=NA,
-    density.info="none", trace="none",
-    cexRow=1, cexCol=1, margins=c(8,20), keysize=1, srtCol=45)
-dev.off()
-png("1.5.QLF.DiffGene.heatmap.png",width = 636, height = 980)
-heatmap.2(data.matrix(diffGenes[,c(2,3,4,5,6,7)]),
-    Rowv=as.dendrogram(clustRows),
-    Colv=as.dendrogram(clustColumns),
-    RowSideColors=module.color,
-    col=myheatcolors1, scale='row', labRow=NA,
-    density.info="none", trace="none",
-    cexRow=1, cexCol=1, margins=c(8,20), keysize=0.5, srtCol=45)
-dev.off()
-
-pdf("1.6.QLF.DiffGene.volcano.pdf", 7, 7)
-EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = 'FDR', pCutoff = 5e-2,
-    FCcutoff=1.0, ylim = c(0, 3), xlim = c(-8, 6), pointSize = 1.0, labSize = 0,
-    colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
-dev.off()
-png("1.6.QLF.DiffGene.volcano.png", 800, 800)
-EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = 'FDR', pCutoff = 5e-2,
-    FCcutoff=1.0, ylim = c(0, 3), xlim = c(-8, 6), pointSize = 1.0, labSize = 0,
-    colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
-dev.off()
-```
-
-![](C:\Users\cx264\AppData\Roaming\marktext\images\2025-01-21-16-17-21-image.png)
-
-### nin-1_spotinoc_12hrs VS nin-1_mock_12hrs
-
-```bash
-paste -d"\t" ../1.mapping/nin-1_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv | awk '{print $1"\t"$2"\t"$4"\t"$6"\t"$8"\t"$10"\t"$12}' > 02.nin-1_spotinoc_12hrs_VS_mock/01.raw.counts.tsv
-```
-
-### nin-1_spotinoc_24hrs_VS_mock
-
-```bash
-paste -d"\t" ../1.mapping/nin-1_mock_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_mock_24hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nin-1_spotinoc_24hrs_rep3/3.sorted.bam.count.tsv | awk '{print $1"\t"$2"\t"$4"\t"$6"\t"$8"\t"$10"\t"$12}' > 03.nin-1_spotinoc_24hrs_VS_mock/01.raw.counts.tsv
-```
-
-nsp1-1_spotinoc_12hrs_VS_mock
-
-```bash
-paste -d"\t" ../1.mapping/nsp1-1_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv | awk '{print $1"\t"$2"\t"$4"\t"$6"\t"$8"\t"$10"\t"$12}' > 04.nsp1-1_spotinoc_12hrs_VS_mock/01.raw.counts.tsv
-```
-
-nsp1-1_spotinoc_24hrs_VS_mock
-
-```bash
-paste -d"\t" ../1.mapping/nsp1-1_mock_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_mock_24hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_24hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_24hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp1-1_spotinoc_24hrs_rep3/3.sorted.bam.count.tsv | awk '{print $1"\t"$2"\t"$4"\t"$6"\t"$8"\t"$10"\t"$12}' > 05.nsp1-1_spotinoc_24hrs_VS_mock/01.raw.counts.tsv
-```
-
-```bash
-paste -d"\t" ../1.mapping/nsp2-2_mock_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_mock_12hrs_rep3/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_12hrs_rep1/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_12hrs_rep2/3.sorted.bam.count.tsv ../1.mapping/nsp2-2_spotinoc_12hrs_rep3/3.sorted.bam.count.tsv | awk '{print $1"\t"$2"\t"$4"\t"$6"\t"$8"\t"$10"\t"$12}' > 06.nsp2-2_spotinoc_12hrs_VS_mock/01.raw.counts.tsv
-```
-
-# X204SC24110826-Z01-F001
-
-This is another batch, 36 samples.
-
-## 0.Data Preparation
+### 0.Raw Data Download
 
 ```bash
 cd /rds/project/rds-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/02.X204SC24110826-Z01-F001
 wget https://objectstorage.uk-london-1.oraclecloud.com/p/v2XIprSU1KrkEYuelgeTVUQkjA7HVOx09Y-r7FtRp-nBlElrsUS7k8rGeRCPkBIy/n/cnyr09qj8zbo/b/england-data/o/out/CP2021051100119/X204SC24110826-Z01-F001/X204SC24110826-Z01-F001.tar
 wget https://objectstorage.uk-london-1.oraclecloud.com/p/v2XIprSU1KrkEYuelgeTVUQkjA7HVOx09Y-r7FtRp-nBlElrsUS7k8rGeRCPkBIy/n/cnyr09qj8zbo/b/england-data/o/out/CP2021051100119/X204SC24110826-Z01-F001/MD5.txt
 tar -xvf X204SC24110826-Z01-F001.tar
-
-#reference genome annotation gtf to bed12 for ReQC analyses
-/rds-d7/user/cx264/rds-csc_programmes-FTKWLWDeHys/programs/gffread/gffread-0.12.7.Linux_x86_64/gffread --bed -o /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.bed12 /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.gff3
 ```
+After data downloading (and unzip), I recommend to verify data integrity using `md5sum -c MD5.txt`. Make sure all files are 'OK'.
 
 ## 1.Trimming
-Be aware that two or more libraries were sequenced for some samples.
+After we get raw sequencing reads, I usually directly go to reads trimming using `trimmomatic`, since low quality data will be filtered out, and adapters have been removed when raw data released. But you can run `fastqc` to check adapters, compare the qualities between raw reads and `trimmomatic` processed reads. 
+  Raw reads were filtered and trimmed to get high quality reads using Trimmomatic (v0.39). Briefly, the bases with quality less than 20 at the start or end of a read were cut off, and reads with length shorter than 60bp were dropped.
+Since there are many samples, I use a `for` loop to iterate.
+Be aware that two libraries were sequenced for some samples.
 
 ```bash
 #!/bin/bash
@@ -345,6 +64,7 @@ for fq1 in "$input_dir"/*/*_1.fq.gz; do
         output_rev_paired="${sample_name}_02_2P.fq.gz"
         output_rev_unpaired="${sample_name}_02_2U.fq.gz"
         echo "Processing ${sample_name}_02"
+        # Need to set specific quality filtering criteria in the following
         java -jar /usr/local/software/trimmomatic/0.39/trimmomatic-0.39.jar PE -threads 8 -summary "${sample_name}_02.summary" "$fq1" "$fq2" \
         "$output_fwd_paired" "$output_fwd_unpaired" "$output_rev_paired" "$output_rev_unpaired" \
         LEADING:20 TRAILING:20 SLIDINGWINDOW:4:20 MINLEN:60
@@ -363,6 +83,7 @@ for fq1 in "$input_dir"/*/*_1.fq.gz; do
         output_rev_unpaired="${sample_name}_2U.fq.gz"
         # Run Trimmomatic
         echo "Processing ${sample_name}"
+        # Need to set specific quality filtering criteria in the following
         java -jar /usr/local/software/trimmomatic/0.39/trimmomatic-0.39.jar PE -threads 8 -summary "${sample_name}.summary" "$fq1" "$fq2" \
         "$output_fwd_paired" "$output_fwd_unpaired" "$output_rev_paired" "$output_rev_unpaired" \
         LEADING:20 TRAILING:20 SLIDINGWINDOW:4:20 MINLEN:60
@@ -373,9 +94,14 @@ done
 
 echo "Trimmomatic process completed."
 ```
+After this step we get a summary file for each sample. This file reports `number of input reads pairs, number (and percentage) of both forward and reverse reads survived`. I recommend to save these information, and provide these in a supplementary table when prepare manuscript.
+
+Note, if there are too many dropped reads during this step (e.g. >10%), it may suggest your data quality might be low, you need doublecheck.
 
 ## 2.Mapping
+After we get high quality reads, we proceed to align these reads to reference genome. After testing several mapper programs, I found `novoalign` perform better (e.g. more mapped reads, higher mapping quality) on many datasets (fungi, plant, nematodes). But, I never tested this on polyploid. Again I recommend to test several mapper programs on your own datasets.
 
+ `novoalign` is a commercial program, but it's free for academia, you can request a license from `sales@novocraft.com`.
 ```bash
 #!/bin/bash
 #SBATCH --partition=icelake
@@ -530,10 +256,12 @@ cd /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/02.
 python3 concate.expression.counts.py /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/05.Jinpeng/02.X204SC24110826-Z01-F001/X204SC24110826-Z01-F001/03.Mapping raw.counts2.tsv
 ```
 
+In this script, I use `qualimap` and `mapinsingts` to check the quality of alignment for each sample. 
+In the last part of this script, I use `htseq-count` to quantify the expression (to count number of reads mapped to each gene/transcript). We call these "raw counts", and these raw counts will be used for subsequent differential expression analysis.
 
 ## 3.QC
 
-In this pipeline, I do quality control throughout many steps. For example, after `trimmomatic` step, you can check how many reads (forward and/or reverse) survived the trimming criteria. Also in mapping step, I used `qualimap` and `mapinsights` to check quality/summary of alignment results, statistics including 'total reads aligned','Strand ratio','Mean mapping quality', etc.
+In this pipeline, I do quality control throughout many steps. For example, after `trimmomatic` step, you can check how many reads (forward and/or reverse) survived the trimming criteria. Also in mapping step, I used `qualimap` and `mapinsights` to check quality/summary of alignment results, statistics including 'total reads aligned','Strand ratio','Mean mapping quality', etc. The results are stored in `./qualimap/genome_results.txt` and `./Overall_mapping_summary.log`. You can retrieve alignment statistics (e.g.: number (percentage) of mapped reads; mapping quality) and put in a supplementary table for your manuscript.
 
 Here I use two more approaches to evaluate quality of the experiment, `RSeQC` and Clustering. Details on `RSeQC` is [RSeQC: An RNA-seq Quality Control Package &#8212; RSeQC documentation](https://rseqc.sourceforge.net/#). Some specific statistics I found valuable are sequencing saturation, mapped reads distribution, reads quality, nucleotide composition bias, PCR bias and GC bias. 
 
@@ -816,6 +544,7 @@ pdf("1.1.LRT.MDS.pdf")
 plotMDS(y, col=c("1","1","2","2","2"))
 dev.off()
 
+# continue from previous section
 design <- model.matrix(~sample+group)
 rownames(design) <- colnames(y)
 design
@@ -934,7 +663,10 @@ y$samples
 pdf("1.1.LRT.MDS.pdf")
 plotMDS(y, col=c("1","1","1","2","2","2"))
 dev.off()
+```
+Following is an MDS plot shows the relative similarities of the six samples. This gives you another way to evaluate your experiment quality.
 
+```R
 design <- model.matrix(~sample+group)
 rownames(design) <- colnames(y)
 design
