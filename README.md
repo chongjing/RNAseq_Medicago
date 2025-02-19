@@ -766,11 +766,10 @@ EnhancedVolcano(deseq_results, lab = rownames(deseq_results), x = 'logFC', y = '
     colAlpha = 1, legendIconSize=2.0, legendLabSize = 10) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
 dev.off()
 ```
-![Volcano plot](https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.6.QLF.DiffGene.volcano.png)
 
 <table>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.5.QLF.DiffGene.heatmap.jpeg" alt="Image 1" width="400"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.5.QLF.DiffGene.heatmap.jpeg" alt="Image 1" width="600"/></td>
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.6.QLF.DiffGene.volcano.png" alt="Image 2" width="400"/></td>
   </tr>
 </table>
@@ -871,6 +870,13 @@ dev.off()
 write.csv(cm$wide.res, "09.cm.8clusters.csv",row.names = TRUE, quote = F)
 write.csv(ct$wide.res, "09.ct.8clusters.csv",row.names = TRUE, quote = F)
 write.csv(ck$wide.res, "09.ck.8clusters.csv",row.names = TRUE, quote = F)
-
-
 ```
+<table>
+  <tr>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/081.getClusters.jpeg" alt="Image 1" width="200"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.ck.cluster.jpeg" alt="Image 2" width="400"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.line_heatmap.jpeg" alt="Image 3" width="600"/></td>
+  </tr>
+</table>
