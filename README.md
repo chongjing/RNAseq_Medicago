@@ -5,8 +5,8 @@ Project iD: X204SC24110826-Z01-F001. We have 36 samples, 10 conditions, some of 
 
 ## Table of Contents
 - [0. Data Preparation](https://github.com/chongjing/RNAseq_Medicago#0-data-preparation)
-
-
+- [1. Trimming](https://github.com/chongjing/RNAseq_Medicago#1trimming)
+- [2. Mapping](https://github.com/chongjing/RNAseq_Medicago#2mapping)
 ## 0. Data Preparation
 
 ### 0.1 Reference
@@ -36,7 +36,7 @@ tar -xvf X204SC24110826-Z01-F001.tar
 ```
 After data downloading (and unzip), I recommend to verify data integrity using `md5sum -c MD5.txt`. Make sure all files are 'OK'.
 
-## 1.Trimming
+## 1. Trimming
 After we get raw sequencing reads, I usually directly go to reads trimming using `trimmomatic`, since low quality data will be filtered out, and adapters have been removed when raw data released. But you can run `fastqc` to check adapters, compare the qualities between raw reads and `trimmomatic` processed reads. 
   Raw reads were filtered and trimmed to get high quality reads using Trimmomatic (v0.39). Briefly, the bases with quality less than 20 at the start or end of a read were cut off, and reads with length shorter than 60bp were dropped.
 Since there are many samples, I use a `for` loop to iterate.
@@ -102,7 +102,7 @@ After this step we get a summary file for each sample. This file reports `number
 
 Note, if there are too many dropped reads during this step (e.g. >10%), it may suggest your data quality might be low, you need doublecheck.
 
-## 2.Mapping
+## 2. Mapping
 After we get high quality reads, we proceed to align these reads to reference genome. After testing several mapper programs, I found `novoalign` perform better (e.g. more mapped reads, higher mapping quality) on many datasets (fungi, plant, nematodes). But, I never tested this on polyploid. Again I recommend to test several mapper programs on your own datasets.
 
  `novoalign` is a commercial program, but it's free for academia, you can request a license from `sales@novocraft.com`.
@@ -263,7 +263,7 @@ python3 concate.expression.counts.py /rds-d7/user/cx264/rds-scrna_spatial-6qULnB
 In this script, I use `qualimap` and `mapinsingts` to check the quality of alignment for each sample. 
 In the last part of this script, I use `htseq-count` to quantify the expression (to count number of reads mapped to each gene/transcript). We call these "raw counts", and these raw counts will be used for subsequent differential expression analysis.
 
-## 3.QC
+## 3. QC
 
 In this pipeline, I do quality control throughout many steps. For example, after `trimmomatic` step, you can check how many reads (forward and/or reverse) survived the trimming criteria. Also in mapping step, I used `qualimap` and `mapinsights` to check quality/summary of alignment results, statistics including 'total reads aligned','Strand ratio','Mean mapping quality', etc. The results are stored in `./qualimap/genome_results.txt` and `./Overall_mapping_summary.log`. You can retrieve alignment statistics (e.g.: number (percentage) of mapped reads; mapping quality) and put in a supplementary table for your manuscript.
 
@@ -512,7 +512,7 @@ dev.off()
 
 ```
 
-## 4.Differential Expression analysis
+## 4. Differential Expression analysis
 For DE analysis, my code is mainly from `edgeR` user's guide (https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf). This user's guide is a must-read in order to know the rationale behind the code.
 Differential Expression analysis using `edgeR` under `mamba activate R4.3.2`.
 
