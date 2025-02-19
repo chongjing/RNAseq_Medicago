@@ -9,6 +9,7 @@ Project iD: X204SC24110826-Z01-F001. We have 36 samples, 10 conditions, some of 
 - [2. Mapping](https://github.com/chongjing/RNAseq_Medicago#2-mapping)
 - [3. QC](https://github.com/chongjing/RNAseq_Medicago#3-qc)
 - [4. Differential Expression Analysis](https://github.com/chongjing/RNAseq_Medicago#4-differential-expression-analysis)
+- [5. Gene Expression Clustering](https://github.com/chongjing/RNAseq_Medicago/tree/main#5-gene-expression-clustering)
 ## 0. Data Preparation
 
 ### 0.1 Reference
@@ -875,10 +876,10 @@ write.csv(ck$wide.res, "09.ck.8clusters.csv",row.names = TRUE, quote = F)
 ```
 <table>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/081.getClusters.jpeg" alt="Image 1" width="200"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/081.getClusters.jpeg" alt="Image 1" width="300"/></td>
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.ck.cluster.jpeg" alt="Image 2" width="400"/></td>
   </tr>
   <tr>
-    <td colspan="2"><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.line_heatmap.jpeg" alt="Image 3" width="600"/></td>
+    <td colspan="2"><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.line_heatmap.jpeg" alt="Image 3" width="750"/></td>
   </tr>
 </table>
