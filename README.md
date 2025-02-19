@@ -5,8 +5,10 @@ Project iD: X204SC24110826-Z01-F001. We have 36 samples, 10 conditions, some of 
 
 ## Table of Contents
 - [0. Data Preparation](https://github.com/chongjing/RNAseq_Medicago#0-data-preparation)
-- [1. Trimming](https://github.com/chongjing/RNAseq_Medicago#1trimming)
-- [2. Mapping](https://github.com/chongjing/RNAseq_Medicago#2mapping)
+- [1. Trimming](https://github.com/chongjing/RNAseq_Medicago#1-trimming)
+- [2. Mapping](https://github.com/chongjing/RNAseq_Medicago#2-mapping)
+- [3. QC](https://github.com/chongjing/RNAseq_Medicago#3-qc)
+- [4. Differential Expression Analysis](https://github.com/chongjing/RNAseq_Medicago#4-differential-expression-analysis)
 ## 0. Data Preparation
 
 ### 0.1 Reference
@@ -512,7 +514,7 @@ dev.off()
 
 ```
 
-## 4. Differential Expression analysis
+## 4. Differential Expression Analysis
 For DE analysis, my code is mainly from `edgeR` user's guide (https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf). This user's guide is a must-read in order to know the rationale behind the code.
 Differential Expression analysis using `edgeR` under `mamba activate R4.3.2`.
 
