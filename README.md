@@ -327,6 +327,16 @@ for sample_dir in "$working_dir"/*/; do
     cd "${working_dir}"
 done
 ```
+<table>
+  <tr>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/05.WT_EV_2.inner_distance_plot.jpeg" alt="Image 1" width="200"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/03.WT_EV_2.geneBodyCoverage.curves.jpeg" alt="Image 2" width="200"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/10.Reads.Distribution.over.GeneBody.jpg" alt="Image 3" width="200"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/15.WT_EV_2.saturation.jpeg" alt="Image 4" width="200"/></td>
+  </tr>
+</table>
 
 ### 3.2TOmicsVis_Clustering
 Following is a way to visualize processed RNAseq results (mainly based on expression counts). Some of the featurs are helpful for quality control, e.g. correlation heatmap of replicates/treatments, and several clustering plots (PCA, tsne).
