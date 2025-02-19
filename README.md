@@ -770,7 +770,7 @@ dev.off()
 
 <table>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.5.QLF.DiffGene.heatmap.jpeg" alt="Image 1" width="600"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.5.QLF.DiffGene.heatmap.jpeg" alt="Image 1" width="400"/></td>
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.6.QLF.DiffGene.volcano.png" alt="Image 2" width="400"/></td>
   </tr>
 </table>
