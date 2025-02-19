@@ -329,12 +329,12 @@ done
 ```
 <table>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/05.WT_EV_2.inner_distance_plot.jpeg" alt="Image 1" width="200"/></td>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/03.WT_EV_2.geneBodyCoverage.curves.jpeg" alt="Image 2" width="200"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/05.WT_EV_2.inner_distance_plot.jpeg" alt="Image 1" width="300"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/03.WT_EV_2.geneBodyCoverage.curves.jpeg" alt="Image 2" width="300"/></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/10.Reads.Distribution.over.GeneBody.jpg" alt="Image 3" width="200"/></td>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/15.WT_EV_2.saturation.jpeg" alt="Image 4" width="200"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/10.Reads.Distribution.over.GeneBody.jpg" alt="Image 3" width="300"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/15.WT_EV_2.saturation.jpeg" alt="Image 4" width="300"/></td>
   </tr>
 </table>
 
@@ -521,8 +521,18 @@ heatmap_cluster(
   summary_alpha = 0.8
 )
 dev.off()
-
 ```
+
+<table>
+  <tr>
+    <td><img src="" alt="Image 1" width="300"/></td>
+    <td><img src="" alt="Image 2" width="300"/></td>
+  </tr>
+  <tr>
+    <td><img src="" alt="Image 3" width="300"/></td>
+    <td><img src="" alt="Image 4" width="300"/></td>
+  </tr>
+</table>
 
 ## 4. Differential Expression Analysis
 For DE analysis, my code is mainly from `edgeR` user's guide (https://bioconductor.org/packages/release/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf). This user's guide is a must-read in order to know the rationale behind the code.
