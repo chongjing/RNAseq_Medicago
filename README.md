@@ -879,6 +879,6 @@ write.csv(ck$wide.res, "09.ck.8clusters.csv",row.names = TRUE, quote = F)
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.ck.cluster.jpeg" alt="Image 2" width="400"/></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.line_heatmap.jpeg" alt="Image 3" width="600"/></td>
+    <td colspan="2"><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.line_heatmap.jpeg" alt="Image 3" width="600"/></td>
   </tr>
 </table>
