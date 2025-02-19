@@ -800,6 +800,7 @@ q()
 
 ## 5. Gene Expression Clustering
 `ClusterGVis` documents states normalized matrix or data frame containing gene expressions are accepted, so we get FPKM first, and then use Differentially Expressed genes for clustering trends.
+
 ### 5.1 get FPKM
 
 ```R
@@ -874,6 +875,9 @@ write.csv(cm$wide.res, "09.cm.8clusters.csv",row.names = TRUE, quote = F)
 write.csv(ct$wide.res, "09.ct.8clusters.csv",row.names = TRUE, quote = F)
 write.csv(ck$wide.res, "09.ck.8clusters.csv",row.names = TRUE, quote = F)
 ```
+
+Particularly in this study, we are insterested in genes that are high expressed in WT_S7 samples and low expression in others (WT_S1, Ns_S1, N2_S7). Very luckily,we got these genes in Cluster 6 from bellow. These genes are in high priority for subsequent analyses.
+
 <table>
   <tr>
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/081.getClusters.jpeg" alt="Image 1" width="300"/></td>
