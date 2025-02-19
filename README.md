@@ -773,7 +773,9 @@ dev.off()
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.6.QLF.DiffGene.volcano.png" alt="Image 2" width="400"/></td>
   </tr>
 </table>
+
 ```R
+
 # gene ranking dotplot, function from TOmicsVis
 # data should be (1st-col: Genes, 2nd-col: log2FoldChange, 3rd-col: Pvalue, 4th-col: FDR)
 pdf("1.7.GeneRanking.pdf",9,7)
@@ -876,5 +878,7 @@ write.csv(ck$wide.res, "09.ck.8clusters.csv",row.names = TRUE, quote = F)
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/081.getClusters.jpeg" alt="Image 1" width="200"/></td>
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.ck.cluster.jpeg" alt="Image 2" width="400"/></td>
   </tr>
+  <tr>
     <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/082.line_heatmap.jpeg" alt="Image 3" width="600"/></td>
+  </tr>
 </table>
