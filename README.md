@@ -187,6 +187,8 @@ for sample_dir in "$input_dir"/*/; do
     # Step 4: Expression counts
     # HTseq-count
     /rds/user/cx264/rds-csc_programmes-FTKWLWDeHys/programs/mambaforge/envs/python3.8/bin/htseq-count --type transcript --counts_output 3.sorted.bam.count.tsv --nprocesses 16 --max-reads-in-buffer 1000000 2.sorted.bam /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.gtf
+    # FPKM normalized expression
+    /data/pathology/program/stringtie-3.0.0.Linux_x86_64/stringtie -p 32 -G /rds-d7/user/cx264/rds-scrna_spatial-6qULnBz5AIM/Chongjing_Xia/01.SpatialTranscriptomics/00.ref/M.truncatula_genome_v4/Mtruncatula_285_Mt4.0v1.gene.gtf -e -B -A 4.sorted.FPKM.tsv 2.sorted.bam
 
     echo "${sample_name} completed"
     cd "${working_dir}"
@@ -766,6 +768,12 @@ dev.off()
 ```
 ![Volcano plot](https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.6.QLF.DiffGene.volcano.png)
 
+<table>
+  <tr>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.5.QLF.DiffGene.heatmap.jpeg" alt="Image 1" width="400"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.6.QLF.DiffGene.volcano.png" alt="Image 2" width="400"/></td>
+  </tr>
+</table>
 ```R
 # gene ranking dotplot, function from TOmicsVis
 # data should be (1st-col: Genes, 2nd-col: log2FoldChange, 3rd-col: Pvalue, 4th-col: FDR)
@@ -788,4 +796,81 @@ q()
 ```
 ![A gene rank plot](https://github.com/chongjing/RNAseq_Medicago/blob/main/04.DE_analysis/02.WTEV_vs_WTRE/1.7.GeneRanking.jpeg)
 
-##TO-DO 5.Gene Expression Clustering
+## 5. Gene Expression Clustering
+`ClusterGVis` documents states normalized matrix or data frame containing gene expressions are accepted, so we get FPKM first, and then use Differentially Expressed genes for clustering trends.
+### 5.1 get FPKM
+
+```R
+library(GenomicFeatures)
+library(dplyr)
+library(GenomicRanges)
+library(tibble)
+
+raw_counts <- read.csv("raw.counts.tsv", sep="\t", row.names = 1)
+gtf_file <- "Mtruncatula_285_Mt4.0v1.gene.gtf"
+
+# Create a TxDb object from the GTF file
+txdb <- makeTxDbFromGFF(gtf_file, format = "gtf")
+# Extract gene lengths (in kilobases)
+exons_by_gene <- exonsBy(txdb, by = "gene")
+gene_lengths <- sapply(exons_by_gene, function(x) sum(width(x)))  # Total exon length per gene in base pairs
+gene_lengths <- data.frame(GeneID = names(gene_lengths), gene_length_kb = gene_lengths / 1000)
+# Step 3: Calculate total mapped reads per sample
+# Total mapped reads is the sum of raw counts for each sample
+total_mapped_reads <- colSums(raw_counts) / 1e6  # Convert to millions
+
+# Step 4: Calculate FPKM
+fpkm_data <- raw_counts %>%
+  rownames_to_column(var = "GeneID") %>%  # Convert row names to a column
+  left_join(gene_lengths, by = "GeneID") %>%  # Join with gene lengths
+  column_to_rownames(var = "GeneID")  # Convert GeneID column back to row names
+# Calculate FPKM for each sample
+options(scipen = 999)
+fpkm <- sapply(colnames(raw_counts), function(sample) {
+  result <- (raw_counts[, sample] / fpkm_data$gene_length_kb) / total_mapped_reads[sample]
+  format(result, digits = 5, nsmall = 5)
+})
+options(scipen = 0)
+
+# Convert to a data frame
+fpkm <- as.data.frame(fpkm)
+rownames(fpkm) <- rownames(raw_counts)
+
+# Save the FPKM data to a file
+write.csv(fpkm, "fpkm_normalized_counts.csv", row.names = TRUE, quote=F)
+```
+### 5.2 Clustering for expression matrix
+```R
+library(ClusterGVis)
+library(Biobase)
+library(Mfuzz)
+
+FPKM_counts <- read.csv("07.FPKM.genes4clustering.csv", sep="\t", row.names = 1)
+FPKM_counts <- FPKM_counts[,c(24,26,36,4,19,21,29,1,18,27,30,15,17,20,25)]
+#define a suitable cluster numbers
+pdf("081.getClusters.pdf")
+getClusters(FPKM_counts)
+cm <- clusterData(FPKM_counts, cluster.method = "mfuzz", cluster.num = 8)
+ct <- clusterData(FPKM_counts, cluster.method = "TCseq", cluster.num = 8)
+ck <- clusterData(FPKM_counts, cluster.method = "kmeans", cluster.num = 8)
+visCluster(cm, plot.type = "line", ms.col = c("green", "orange", "red"))
+visCluster(ct, plot.type = "line", ms.col = c("green", "orange", "red"))
+visCluster(ck, plot.type = "line")
+dev.off()
+
+
+#line plot
+pdf("082.line_heatmap.pdf")
+visCluster(object = cm,
+           plot.type = "both",
+           ms.col = c("green","orange","red"),
+           column_names_rot = 45)
+dev.off()
+
+# save cluster information and membership (if exit)
+write.csv(cm$wide.res, "09.cm.8clusters.csv",row.names = TRUE, quote = F)
+write.csv(ct$wide.res, "09.ct.8clusters.csv",row.names = TRUE, quote = F)
+write.csv(ck$wide.res, "09.ck.8clusters.csv",row.names = TRUE, quote = F)
+
+
+```
