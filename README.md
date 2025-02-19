@@ -329,12 +329,12 @@ done
 ```
 <table>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/05.WT_EV_2.inner_distance_plot.jpeg" alt="Image 1" width="300"/></td>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/03.WT_EV_2.geneBodyCoverage.curves.jpeg" alt="Image 2" width="300"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/05.WT_EV_2.inner_distance_plot.jpeg" alt="Image 1" width="400"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/03.WT_EV_2.geneBodyCoverage.curves.jpeg" alt="Image 2" width="400"/></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/10.Reads.Distribution.over.GeneBody.jpg" alt="Image 3" width="300"/></td>
-    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/15.WT_EV_2.saturation.jpeg" alt="Image 4" width="300"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/10.Reads.Distribution.over.GeneBody.jpg" alt="Image 3" width="400"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/03.Mapping/WT_EV_2/RSeQC/15.WT_EV_2.saturation.jpeg" alt="Image 4" width="400"/></td>
   </tr>
 </table>
 
@@ -525,12 +525,12 @@ dev.off()
 
 <table>
   <tr>
-    <td><img src="" alt="Image 1" width="300"/></td>
-    <td><img src="" alt="Image 2" width="300"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/061.corr_heatmap.pearson.jpeg" alt="Image 1" width="400"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/062.pca.jpeg" alt="Image 2" width="400"/></td>
   </tr>
   <tr>
-    <td><img src="" alt="Image 3" width="300"/></td>
-    <td><img src="" alt="Image 4" width="300"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/062.tsne.jpeg" alt="Image 3" width="400"/></td>
+    <td><img src="https://github.com/chongjing/RNAseq_Medicago/blob/main/05.Clustering/065.samples_dendrop.jpeg" alt="Image 4" width="400"/></td>
   </tr>
 </table>
 
