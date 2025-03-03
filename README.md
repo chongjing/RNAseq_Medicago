@@ -848,7 +848,7 @@ library(ClusterGVis)
 library(Biobase)
 library(Mfuzz)
 
-FPKM_counts <- read.csv("07.FPKM.genes4clustering.csv", sep="\t", row.names = 1)
+FPKM_counts <- read.csv("07.FPKM.genes4clustering.csv", sep=",", row.names = 1)
 FPKM_counts <- FPKM_counts[,c(24,26,36,4,19,21,29,1,18,27,30,15,17,20,25)]
 #define a suitable cluster numbers
 pdf("081.getClusters.pdf")
