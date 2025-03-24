@@ -64,8 +64,10 @@ for fq1 in "$input_dir"/*/*_1P.fq.gz; do
     # Run QualiMap
     /data/pathology/program/QualiMap/qualimap_v2.3/qualimap rnaseq -bam ${sample_name}Aligned.sortedByCoord.out.bam -gtf /data/pathology/cxia/projects/0.ref/09.Arabidopsis_TAIR10_Hschatti1.2/TAIR10_Hschachtii.gtf --java-mem-size=32G -outdir ./qualimap/ -outformat pdf
 
-    # Get expression counts
+    # Get expression raw counts
     /data/pathology/program/Miniforge3/bin/htseq-count --type transcript --counts_output 3.sorted.bam.count.tsv --nprocesses 16 --max-reads-in-buffer 1000000 ${sample_name}Aligned.sortedByCoord.out.bam /data/pathology/cxia/projects/0.ref/09.Arabidopsis_TAIR10_Hschatti1.2/TAIR10_Hschachtii.gtf
+    # Get expression FPKM TPM
+    /data/pathology/program/stringtie-3.0.0.Linux_x86_64/stringtie -p 32 -G /data/pathology/cxia/projects/0.ref/09.Arabidopsis_TAIR10_Hschatti1.2/TAIR10_Hschachtii.gtf -e -B -A 4.sorted.FPKM.tsv ${sample_name}Aligned.sortedByCoord.out.bam
 
    cd "${output_dir}"
 
