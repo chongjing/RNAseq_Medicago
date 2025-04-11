@@ -2,7 +2,7 @@
 
 ### 1. Reference
 
-For this specific project, we use concatenated genomes of host and nematode as reference.
+For this specific project, we use concatenated genomes of host (TAIR10) and nematode as reference.
 
 ```bash
 cd /data/pathology/cxia/projects/0.ref/09.Arabidopsis_TAIR10_Hschatti1.2
@@ -23,7 +23,65 @@ cat /data/pathology/cxia/projects/0.ref/2.Arabidopsis_TAIR10/TAIR10_GFF3_genes.g
 
 ```
 
-### 2. Aligment
+### 2. Trimming
+```bash
+cd /data/pathology/cxia/projects/Sebastian/05.X204SC25031192-Z01-F001/X204SC25031192-Z01-F001/02.CleanData
+
+# we are using trimmomatic.jar from /usr/local/software/trimmomatic/0.39/trimmomatic-0.39.jar
+input_dir="/data/pathology/cxia/projects/Sebastian/05.X204SC25031192-Z01-F001/X204SC25031192-Z01-F001/01.RawData"
+output_dir="/data/pathology/cxia/projects/Sebastian/05.X204SC25031192-Z01-F001/X204SC25031192-Z01-F001/02.CleanData"
+
+# Run Trimmomatic iterate through each sample
+for fq1 in "$input_dir"/*/*_1.fq.gz; do
+    fq2="${fq1/_1.fq.gz/_2.fq.gz}" # Get the corresponding paired-end file
+    cd "${output_dir}"
+
+    # Extract sample name
+    sample_name=$(basename "$fq1" | cut -d'_' -f1-3)
+
+    # Set directory
+    if [ -d "$sample_name" ]; then
+        # If the directory exists, change to that directory
+        cd "$sample_name"
+        echo "Changed directory to $sample_name"
+            # Set output files
+        output_fwd_paired="${sample_name}_02_1P.fq.gz"
+        output_fwd_unpaired="${sample_name}_02_1U.fq.gz"
+        output_rev_paired="${sample_name}_02_2P.fq.gz"
+        output_rev_unpaired="${sample_name}_02_2U.fq.gz"
+        echo "Processing ${sample_name}_02"
+        # Need to set specific quality filtering criteria in the following
+        java -jar /data/pathology/program/Trimmomatic/Trimmomatic-0.39/trimmomatic-0.39.jar PE -threads 16 -summary "${sample_name}_02.summary" "$fq1" "$fq2" \
+        "$output_fwd_paired" "$output_fwd_unpaired" "$output_rev_paired" "$output_rev_unpaired" \
+        LEADING:20 TRAILING:20 SLIDINGWINDOW:4:20 MINLEN:60
+        echo "${sample_name}_02 finished"
+        cd "${output_dir}"
+    else
+        # If the directory does not exist, create it
+        mkdir -p "${sample_name}"
+        echo "Directory $sample_name created"
+        # Change to the newly created directory
+        cd "${sample_name}"
+        echo "Changed directory to $sample_name"
+        output_fwd_paired="${sample_name}_1P.fq.gz"
+        output_fwd_unpaired="${sample_name}_1U.fq.gz"
+        output_rev_paired="${sample_name}_2P.fq.gz"
+        output_rev_unpaired="${sample_name}_2U.fq.gz"
+        # Run Trimmomatic
+        echo "Processing ${sample_name}"
+        # Need to set specific quality filtering criteria in the following
+        java -jar /data/pathology/program/Trimmomatic/Trimmomatic-0.39/trimmomatic-0.39.jar PE -threads 16 -summary "${sample_name}.summary" "$fq1" "$fq2" \
+        "$output_fwd_paired" "$output_fwd_unpaired" "$output_rev_paired" "$output_rev_unpaired" \
+        LEADING:20 TRAILING:20 SLIDINGWINDOW:4:20 MINLEN:60
+        cd "${output_dir}"
+    fi
+    echo "${sample_name} finished"
+done
+
+echo "Trimmomatic process completed."
+```
+
+### 3. Aligment
 
 ```bash
 #!/bin/bash
