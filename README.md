@@ -7,7 +7,7 @@ Project iD: X204SC24110826-Z01-F001. We have 36 samples, 10 conditions, some of 
 - [0. Data Preparation](https://github.com/chongjing/RNAseq_Medicago#0-data-preparation)
 - [1. Trimming](https://github.com/chongjing/RNAseq_Medicago#1-trimming)
 - [2. Mapping](https://github.com/chongjing/RNAseq_Medicago#2-mapping)
-- [3. QC](https://github.com/chongjing/RNAseq_Medicago#3-qc)
+- [3. QC](https://github.com/chongjing/RNAseq_Medicago?tab=readme-ov-file#3-qc)
 - [4. Differential Expression Analysis](https://github.com/chongjing/RNAseq_Medicago#4-differential-expression-analysis)
 - [5. Gene Expression Clustering](https://github.com/chongjing/RNAseq_Medicago/tree/main#5-gene-expression-clustering)
 ## 0. Data Preparation
